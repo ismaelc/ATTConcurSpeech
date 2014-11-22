@@ -3,7 +3,7 @@ This code demonstrates how to submit business expense with voice using [AT&T's S
 
 <img src="https://jfqcza.bn1301.livefilestore.com/y2pAadkatL5OnCjt3D6gJvJz_-T2YbRGnxNv7gW-TWIxHufH0-PhJm8MpoTto1beuZLmE01iZ-PNNWz7z3JmQCvFBVkh8m2msnskbuXofQppGc/ConcurATTdiagram.PNG?psid=1" width="800px" />
 
-The diagram above describes the flow of the demo, and the file/code where each logic is located.  The Code section below will explain how this all works. This code uses the HTML5 Audio API to record voice, and node.js to drive the backend (primarily to accept client calls and call out web APIs). The AudioRecorder code is credited to Chris Wilson (check out his other demos [here](http://webaudiodemos.appspot.com/)).
+The diagram above describes the flow of the demo, and the file/code where each logic is located.  The Code section below will explain how this all works. This code uses the HTML5 Audio API (use Chrome) to record voice, and node.js to drive the backend (primarily to accept client calls and call out web APIs). The AudioRecorder code is credited to Chris Wilson (check out his other demos [here](http://webaudiodemos.appspot.com/)).
 
 ### Configuration
 You would need to sign up for three developer accounts:
