@@ -1,0 +1,7 @@
+{
+  "name": "speech-recognition-demo-att-concur",
+  "description": "A sample app to submit business expense using voice",
+  "repository": "https://github.com/ismaelc/ATTConcurSpeech",
+  "logo": "http://node-js-sample.herokuapp.com/node.svg",
+  "keywords": ["node", "express", "static"]
+}
