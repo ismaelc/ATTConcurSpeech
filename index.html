@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Send expense to Concur using AT&amp;T Speech API : ">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Send expense to Concur using AT&amp;T Speech API</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/ismaelc/ATTConcurSpeech">View on GitHub</a>
+
+          <h1 id="project_title">Send expense to Concur using AT&amp;T Speech API</h1>
+          <h2 id="project_tagline"></h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/ismaelc/ATTConcurSpeech/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/ismaelc/ATTConcurSpeech/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h2>
+<a id="sending-expense-to-concur-with-atts-speech-api" class="anchor" href="#sending-expense-to-concur-with-atts-speech-api" aria-hidden="true"><span class="octicon octicon-link"></span></a>Sending expense to Concur with AT&amp;T's Speech API</h2>
+
+<p>This code demonstrates how to submit business expense with voice using <a href="http://developer.att.com/apis/speech">AT&amp;T's Speech Recognition API</a> and the <a href="https://github.com/concur/concur-platform-sdk-js">Concur SDK</a>.  You can check out the demo video <a href="https://www.youtube.com/watch?v=SR7ZqeG38ZM">here</a></p>
+
+<p><img src="https://jfqcza.bn1301.livefilestore.com/y2pAadkatL5OnCjt3D6gJvJz_-T2YbRGnxNv7gW-TWIxHufH0-PhJm8MpoTto1beuZLmE01iZ-PNNWz7z3JmQCvFBVkh8m2msnskbuXofQppGc/ConcurATTdiagram.PNG?psid=1" width="800px"></p>
+
+<p>The diagram above describes the flow of the demo, and the file/code where each logic is located.  The Code section below will explain how this all works. This code uses the HTML5 Audio API to record voice, and node.js to drive the backend (primarily to accept client calls and call out web APIs). The AudioRecorder code is credited to Chris Wilson (check out his other demos <a href="http://webaudiodemos.appspot.com/">here</a>).</p>
+
+<h3>
+<a id="configuration" class="anchor" href="#configuration" aria-hidden="true"><span class="octicon octicon-link"></span></a>Configuration</h3>
+
+<p>You would need to sign up for three developer accounts:</p>
+
+<ul>
+<li>
+<a href="https://www.firebase.com/signup/">Firebase</a> - Used to store/transfer the audio between the client and server</li>
+<li>
+<a href="https://developer.att.com/developer/flow/apiPlaygroundFlow.do?execution=e1s1">AT&amp;T Developer</a> - Speech API to translate audio into text</li>
+<li>
+<a href="https://developer.concur.com/register">Concur Developer</a> - QuickExpense API to submit expense amount to Concur</li>
+</ul>
+
+<p>Once you've signed up for all the three accounts above, you need to manually generate the access token for AT&amp;T and Concur in the <code>config.js</code> file described below.  Follow these links on how to do that:</p>
+
+<ul>
+<li><a href="http://developer.att.com/apis/speech/docs">Generate AT&amp;T Developer access token</a></li>
+<li><a href="https://developer.concur.com/oauth-20/native-flow">Generate Concur Developer access token</a></li>
+</ul>
+
+<p>For Firebase, you simply need to add your Firebase URL that ends with <code>firebaseio.com</code></p>
+
+<pre><code>config.att.accessToken = "&lt;insert AT&amp;T access token here&gt;";
+config.concur.accessToken = "&lt;insert Concur access token here&gt;";
+config.firebase.url = "&lt;insert Firebase URL here&gt;";
+</code></pre>
+
+<h3>
+<a id="code" class="anchor" href="#code" aria-hidden="true"><span class="octicon octicon-link"></span></a>Code</h3>
+
+<p>Please refer to the diagram at the top of this README to follow the code explanation below:</p>
+
+<ol>
+<li>Tap the microphone icon on the app to start recording voice. Tap it again to end recording.</li>
+<li>
+<p>Capture voice into blob.  The function below will already hold the audio <code>blob</code>, ready to be sent Firebase</p>
+
+<pre><code>function doneEncoding( blob ) {
+  // sendVoiceToNode called in concuratt.js
+  sendVoiceToNode(blob);
+  Recorder.setupDownload( blob, "myRecording" + ((recIndex&lt;10)?"0":"") + recIndex + ".wav" );
+  recIndex++;
+}
+</code></pre>
+</li>
+<li>
+<p>Trigger server to wait; Send B64'd blob to Firebase</p>
+
+<pre><code>// set up POST call as trigger to wait for Firebase to receive the B64 voice/binary file
+var xhr = new XMLHttpRequest();
+xhr.open("POST", '/receiveVoice', true);
+xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+
+// send the call to trigger server into wait mode
+xhr.send(JSON.stringify(data));
+
+// ... and send B64'd blob to Firebase
+sendToFirebase(blob, id);
+</code></pre>
+</li>
+<li>
+<p>Receive Base-64'd  blob from Firebase</p>
+
+<pre><code>// receive B64'd blob from Firebase
+myVoiceRootRef.on('child_added', function(snapshot) {
+     if (!newVoiceItems) return; // Keep from loading entire list
+
+     var fbaseObj = snapshot.val();
+
+     var b64string = fbaseObj.voiceBlobBase64;
+     var buf = new Buffer(b64string, 'base64');
+
+     ...
+})
+</code></pre>
+</li>
+<li>
+<p>Call AT&amp;T Speech API on voice blob</p>
+
+<pre><code>// set up call to AT&amp;T Speech Recognition on blob turned to buffer
+var headers = {
+   'Content-Type': 'audio/wav',
+   'Authorization': 'Bearer ' + config.att.accessToken,
+   'Accept' : 'application/json'
+};
+
+var options = {
+   host: 'api.att.com',
+   path: '/speech/v3/speechToText',
+   method: 'POST',
+   headers: headers
+};
+
+// Setup the request.
+var req = https.request(options, function (res) {
+   res.setEncoding('utf-8');
+
+   var responseString = '';
+
+   res.on('data', function (data) {
+       responseString += data;
+   });
+
+   res.on('end', function () {
+       console.log("Response: " + responseString);
+       ...
+    });
+});
+
+req.on('error', function (e) {
+   // TODO: handle error.
+   console.log(e);
+});
+
+// make the request to AT&amp;T Speech Recognition API
+req.write(buf);
+req.end();      
+</code></pre>
+</li>
+<li>
+<p>Send expense to Concur through QuickExpense API using the <a href="https://github.com/concur/concur-platform-sdk-js">Concur SDK</a></p>
+
+<pre><code>// Upon confirmation from user, send amount to Concur
+app.post('/receiveExpense', function(req, res) {
+
+  var amount = req.body.amount;
+
+  var now = new Date();
+  var year = now.getFullYear();
+  var month = now.getMonth();
+  var date = now.getDate();
+
+  var fullDate = year + '-' + (month +1) + '-' + date;
+
+  var concurBody = {
+    "CurrencyCode": "USD",
+    "TransactionAmount": amount,
+    "TransactionDate": fullDate
+  }
+
+  var options = {
+    oauthToken: config.concur.accessToken,
+    contentType:'application/json',
+    body:concurBody
+  }
+
+  concur.quickexpenses.send(options)
+   .then(function(data){
+      //Contains the ID and URI to the resource
+      console.log("QuickExpense created! " + amount);
+      res.send("QuickExpense created! " + amount);
+   })
+   .fail(function (error) {
+      //Error contains the error returned
+      console.log(error);
+   });
+});
+</code></pre>
+</li>
+</ol>
+
+<h3>
+<a id="support" class="anchor" href="#support" aria-hidden="true"><span class="octicon octicon-link"></span></a>Support</h3>
+
+<p>If you have questions about this code, please contact me at <a href="mailto:chris.ismael@concur.com">chris.ismael@concur.com</a> </p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Send expense to Concur using AT&amp;T Speech API maintained by <a href="https://github.com/ismaelc">ismaelc</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
