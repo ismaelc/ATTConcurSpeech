@@ -140,4 +140,4 @@ Please refer to the diagram at the top of this README to follow the code explana
         });
 
 ### Support
-If you have questions about this code, please contact me at chris.ismael@concur.com 
+If you have questions about this code, please email me at chris.ismael@concur.com 
